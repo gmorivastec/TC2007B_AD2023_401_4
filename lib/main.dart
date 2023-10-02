@@ -35,7 +35,7 @@ class MainApp extends StatelessWidget {
       home: Scaffold(
         appBar: AppBar(),
         body: const Center(
-          child: LoginWidget(),
+          child: RealTimeWidget(),
         ),
       ),
     );
@@ -172,10 +172,33 @@ class _RealTimeWidgetState extends State<RealTimeWidget> {
   final Stream<QuerySnapshot> _puppiesStream =
       FirebaseFirestore.instance.collection("puppies").snapshots();
   Widget build(BuildContext context) {
-    return StreamBuilder(
+    return StreamBuilder<QuerySnapshot>(
         stream: _puppiesStream,
         builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
-          return const Placeholder();
+          if (snapshot.hasError) {
+            return const Text("ERROR ON QUERY, PLEASE VERIFY");
+          }
+
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const CircularProgressIndicator();
+          }
+
+          return ListView(
+            children: snapshot.data!.docs
+                .map((DocumentSnapshot doc) {
+                  // iterate through docs and build a widget for each one
+                  Map<String, dynamic> data =
+                      doc.data()! as Map<String, dynamic>;
+
+                  // with data now available we build a widget
+                  return ListTile(
+                    title: Text(data['name']),
+                    subtitle: Text(data['breed']),
+                  );
+                })
+                .toList()
+                .cast(),
+          );
         });
   }
 }
